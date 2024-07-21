@@ -1,3 +1,5 @@
+[TOC]
+
 # 微服务学习笔记
 
 &emsp;微服务是一种软件架构风格，它是以专注于单一职责的很多小型项目为基础，组合出复杂的大型应用。
@@ -140,4 +142,165 @@ mybatis-plus:
 ### Json处理器
 
 &emsp;数据库中有Json类型的字段，在实体类中，需要定义一个对象来接收Json，在该对象上面添加注解`@TableField(typeHandler = JacksonTypeHandler.class)`并且在实体类上面添加注解`@TableName(autoResultMap = true)`，就可以实现数据库的Json字段自动转换为实体类中的对象各种数据。
+
+## Docker
+
+&emsp;快速构建、运行、管理应用的工具。
+
+### 镜像和容器
+
+&emsp;当我们利用Docker安装应用时，Docker会自动搜索并下载应用镜像（image）。镜像不仅包含应用本身，还包含应用运行所需要的环境、配置、系统函数库。Docker会在运行镜像时创建一个隔离环境，称为容器（container）。
+
+&emsp;**镜像仓库：**存储和管理镜像的平台，Docker官方维护了一个公共仓库：Docker Hub。
+
+### 部署MySQL
+
+&emsp;先停掉虚拟机中的MySQL，确保虚拟机已经安装Docker，且网络开通的情况下，执行下面命令即可安装MySQL：
+
+```shell
+docker run -d \
+	--name mysql \
+	-p 3306:3306 \
+	-e TZ=Asia/Shanghai \
+	-e MYSQL_ROOT_PASSWORD=123 \
+	mysql
+```
+
+- **docker run：**创建并运行一个容器，**-d**是让容器在后台运行
+- **--name mysql：**给容器起个名字，必须唯一
+- **-p 3306:3306：**设置端口映射（宿主机端口映射到容器内端口，因为容器是隔离环境，不同容器可以相同端口，也有自己的ip，而外部无法直接访问容器，需要访问宿主机，由宿主机映射相应的容器）
+- **-e KEY=VALUE：**设置环境变量
+- **mysql：**指定运行的镜像的名字（一般是Repository:TAG）
+
+#### 镜像命名规范
+
+&emsp;镜像名称一般分两部分组成：**[repository]:[tag]**。
+
+- 其中repository就是镜像名称
+- tag是镜像的版本
+
+&emsp;在没有指定tag时，默认是latest，代表最新版本的镜像
+
+### 常见命令
+
+- docker pull：从镜像仓库中拉取到本地镜像
+- docker push：将本地镜像推送到镜像仓库
+- docker build：编写自定义镜像，通过dockerfile构建本地镜像
+- docker save：将本地镜像保存成文件.tar
+- docker load：加载文件到本地镜像
+- docker images：查看本地所以镜像
+- docker rmi：删除本地镜像
+- docker run：**创建并**运行本地镜像（本地镜像没有会去镜像仓库拉取）
+- docker stop：停止容器内的进程（**容器还在**）
+- docker start：开启停止的容器、
+- docker ps：查看容器进程状态（ps：process state）
+- docker exec：连接容器在容器内部执行命令
+
+### 数据卷
+
+&emsp;**数据卷（volume）**是一个**虚拟**目录，是容器内目录与宿主机目录之间映射的桥梁。方便操作容器内文件，或者迁移容器产生的数据。
+
+#### 如何挂载数据卷？
+
+- **docker run** 创建容器时，利用 **-v 数据卷名:容器内目录** 或 **-v 本地目录:容器内目录** 可以完成本地目录挂载
+- 容器创建时，如果发现挂载的数据卷不存在时，会自动创建（匿名数据卷：目录层深，名字太长，不便于后续数据存储与迁移）
+- 本地目录必须以“/"或”./“开头，如果直接以名称开头，会被识别为数据卷而非本地目录
+- `-v mysql:/var/lib/mysql`会被识别为一个数据卷叫mysql
+- `-v ./mysql:/var/lib/mysql`会被识别为当前目录下的mysql目录
+
+#### 数据卷命令
+
+- docker volume create：创建数据卷
+- docker volume ls：查看所有数据卷
+- docker volume rm：删除指定数据卷
+- docker volume inspect：查看某个数据卷的详情
+- docker volume prune：删除未使用的数据卷
+
+### 自定义镜像
+
+&emsp;镜像就是包含了应用程序、程序运行的系统函数库、运行配置等文件的文件包。构建镜像的过程其实就是把上述文件打包的过程。
+
+#### 镜像结构
+
+- 基础镜像（BaseImage）：应用依赖的系统函数库、环境、配置、文件等
+- 层（Layer）：添加安装包、依赖、配置等，每次操作都形成新的一层
+- 入口（EntryPoint）：镜像运行入口，一般是程序启动的脚本和参数
+
+#### Dockerfile
+
+&emsp;Dockerfile就是一个文本文件，其中包含一个个的**指令（Instruction）**，用指令来说明要执行什么操作来构建镜像。将来Docker可以根据Dockerfile帮我们构建镜像。常见指令如下：
+
+|    指令    |                     说明                     |                             示例                             |
+| :--------: | :------------------------------------------: | :----------------------------------------------------------: |
+|    FROM    |                 指定基础镜像                 |                        FROM centos:6                         |
+|    ENV     |        设置环境变量，可在后面指令使用        |                        ENV key value                         |
+|    COPY    |         拷贝本地文件到镜像的指定目录         |                   COPY ./jrell.tar.gz /tmp                   |
+|    RUN     |  执行Linux的shell命令，一般是安装过程的命令  | RUN tar -zxvf /tmp/jrell.tar.gz <br />&& EXPORTS path=/tmp/jrell:$path |
+|   EXPOSE   | 指定容器运行时监听的端口，是给镜像使用者看的 |                         EXPOSE 8080                          |
+| ENTRYPOINT |     镜像中应用的启动命令，容器运行时调用     |                 ENTRYPOINT java -jar xx.jar                  |
+
+&emsp;我们可以基于Ubuntu基础镜像，利用Dockerfile描述镜像结构，也可以直接基于JDK为基础镜像，省略前面的步骤。
+
+&emsp;当编写好了Dockerfile，可以利用下面命令来构建镜像：
+
+```shell
+docker build -t 镜像名 Dockerfile目录
+```
+
+eg：`docker build -t myImage:1.0 .`
+
+- **-t**：是给镜像起名，格式依然是repository:tag的格式，不指定tag时，默认为latest
+- **.** ：是指定Dockerfile所在目录，如果就在当前目录，则指定为“.”
+
+### 容器网络互联
+
+&emsp;默认情况下，所有容器都是以bridge方法连接到Docker的一个虚拟网桥上，这可能会导致同一个软件每次创建容器时分配的ip不一致。
+
+&emsp;加入自定义网络的容器才可以通过容器名互相访问，Docker的网络操作命令如下：
+
+|           命令            |           说明           |
+| :-----------------------: | :----------------------: |
+|   docker network create   |       创建一个网络       |
+|     docker network ls     |       查看所有网络       |
+|     docker network rm     |       删除指定网络       |
+|   docker network prune    |     清楚未使用的网络     |
+|  docker network connect   | 使指定容器连接加入某网络 |
+| docker network disconnect | 使指定容器连接离开某网络 |
+|  docker network inspect   |     查看网络详细信息     |
+
+### 部署项目
+
+#### 部署后端
+
+- 首先把Java应用打包成jar包（通过maven的package），上传到虚拟机
+- 上传准备好的Dockerfile
+- 执行docker run命令构建并启动
+
+#### 部署前端
+
+- 准备好配置文件（nginx.conf）和静态资源
+- 创建容器挂载目录并启动
+
+Java应用要跟mysql互连，Java、mysql、nginx三个容器要在同一个网络，三者通过容器名互连。
+
+### DockerCompose
+
+&emsp;Docker Compose通过一个单独的**docker-compose.yml**模板文件（YAML格式）来定义一组相关联的应用容器，帮助我们实现多个相互关联的Docker容器的快速部署。
+
+&emsp;docker compose的命令格式如下：
+`docker compose [OPTIONS] [COMMAND]`
+
+|   类型   | 参数或指令 |             说明             |
+| :------: | :--------: | :--------------------------: |
+| Options  |     -f     | 指定compose文件的路径和名称  |
+| Options  |     -p     |       指定project名称        |
+| Commands |     up     |  创建并启动所有service容器   |
+| Commands |    down    | 停止并溢出所有容器、**网络** |
+| Commands |     ps     |      列出所有启动的容器      |
+| Commands |    logs    |      查看指定容器的日志      |
+| Commands |    stop    |           停止容器           |
+| Commands |   start    |           启动容器           |
+| Commands |  restart   |           重启容器           |
+| Commands |    top     |        查看运行的进程        |
+| Commands |    exec    | 在指定的运行中容器中执行命令 |
 
