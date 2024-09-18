@@ -549,7 +549,7 @@ spring:
 
 ### 微服务登录解决方案
 
-| ![微服务登录解决方案](截图\微服务登录解决方案.png) |
+| ![微服务登录解决方案](截图/微服务登录解决方案.png) |
 | :------------------------------------------------: |
 
 ## 配置管理
@@ -568,7 +568,7 @@ spring:
 
    基于NacosConfig拉取共享配置代替微服务的本地配置
 
-| ![共享配置加载流程](截图\共享配置加载流程.png) |
+| ![共享配置加载流程](截图/共享配置加载流程.png) |
 | :--------------------------------------------: |
 
 ### 配置热更新
@@ -645,14 +645,14 @@ spring:
 
 &emsp;熔断降级是解决雪崩问题的重要手段。思路是由断路器统计服务调用的异常比例、慢请求比例，如果超出阈值则会熔断该服务。即拦截访问该服务的一切请求；而当服务恢复时，断路器会放行访问该服务的请求。
 
-| ![熔断流程图](截图\熔断流程图.png) |
+| ![熔断流程图](截图/熔断流程图.png) |
 | :--------------------------------: |
 
 ### 分布式事务
 
 &emsp;在分布式系统中，如果一个业务需要多个服务合作完成，而且每一个服务都有事务，多个事务必须同时成功或失败，这样的事务就是分布式事务。其中的每个服务的事务就是一个分支事务。整个业务称为全局事务。
 
-| ![分布式遇到的问题例子](截图\分布式遇到的问题例子.png) |
+| ![分布式遇到的问题例子](截图/分布式遇到的问题例子.png) |
 | :----------------------------------------------------: |
 
 #### 解决思路
@@ -667,14 +667,14 @@ spring:
 - **TM(Transaction Manager)-事务管理器：**定义全局事务的范围、开始全局事务、提交或回滚全局事务。
 - **RM(Resource Manage)-资源管理器：**管理分支事务，与TC交谈以注册分支事务和报告分支事务的状态。
 
-| ![Seata架构](截图\Seata架构.png) |
+| ![Seata架构](截图/Seata架构.png) |
 | :------------------------------: |
 
 #### XA模式
 
 &emsp;XA规范是X/Open组织定义的分布式事务处理（DTP，Distributed Transaction Processing）标准，XA规范描述了全局的TM与局部RM之间的接口，几乎所有主流的关系型数据库都对XA规范提供了支持。Seata的XA模式如下：
 
-| ![Seata运行流程](截图\Seata运行流程.png) |
+| ![Seata运行流程](截图/Seata运行流程.png) |
 | :--------------------------------------: |
 
 - **一阶段的工作：**
@@ -709,7 +709,7 @@ spring:
 
 &emsp;Seata主推的是AT模式，AT模式同样是分阶段提交 的事务模型，不过弥补了XA模型中资源锁定周期过长的缺陷。
 
-| ![AT模式](截图\AT模式.png) |
+| ![AT模式](截图/AT模式.png) |
 | :------------------------: |
 
 - **阶段一RM的工作**
@@ -756,7 +756,7 @@ spring:
 
 &emsp;支付服务不在同步调用业务关联度低的服务，而是发送消息通知到Broker。
 
-| ![异步调用](截图\异步调用.png) |
+| ![异步调用](截图/异步调用.png) |
 | :----------------------------: |
 
 #### Q&A
@@ -773,4 +773,404 @@ spring:
 - 不能立刻得到调用结果，时效性差
 - 不确定下游业务执行是否成功
 - 业务安全依赖于Broker的可靠性
+
+### MQ技术选型
+
+&emsp;MQ（MessageQueue），中文是消息队列，字面来看就是存放消息的队列。也就是异步调用中的Broker。
+
+|            |        RabbitMQ        |                ActiveMQ                |  RockerMQ  |   Kafka    |
+| :--------: | :--------------------: | :------------------------------------: | :--------: | :--------: |
+| 公司/社区  |         Rabbit         |                 Apache                 |    阿里    |   Apache   |
+|  开发语言  |         Erlang         |                  Java                  |    Java    | Scala&Java |
+|  协议支持  | AMQP, XMPP, SMTP, STOP | OpenWire, STOMP,<br />REST, XMPP, AMQP | 自定义协议 | 自定义协议 |
+|   可用性   |           高           |                  一般                  |     高     |     高     |
+| 单机吞吐量 |          一般          |                   差                   |     高     |   非常高   |
+|  消息延迟  |         微妙级         |                 毫秒级                 |   毫秒级   |  毫秒以内  |
+| 消息可靠性 |           高           |                  一般                  |     高     |    一般    |
+
+### RabbitMQ基本介绍
+
+&emsp;RabbitMQ的整体架构及核心概念：
+
+- virtual-host：虚拟主机，起到了数据隔离的作用
+- publisher：消息发送者
+- consumer：消息的消费者
+- queue：队列，存储消息
+- exchange：交换机，负责路由消息
+
+| ![RabbitMQ整体架构](截图/RabbitMQ整体架构.png) |
+| :--------------------------------------------: |
+
+### 消息发送的注意事项有哪些？
+
+- 交换机只能路由消息，无法存储消息
+- 交换机只会路由消息给与其绑定的队列，因为队列必须与交换机绑定
+
+### 快速入门
+
+&emsp;SpringAmqp的官方地址：https://spring.io/projects/spring-amqp
+
+#### AMQP
+
+&emsp;AMQP（**A**dvanced **M**essage **Q**ueuing **P**rotocol），是用于在应用程序之间传递业务消息的开放标准。该协议与语言和平台无关，更符合微服务中独立性的要求。
+
+&emsp;Spring AMQP是基于AMQP协议定义的一套API规范，提供了模板来发送和接受消息。包含两部分，其中spring-amqp是基础抽象，spring-rabbit是底层的默认实现。
+
+### Java客户端
+
+#### SpringAMQP如何收发消息？
+
+1. 引入spring-boot-starter-amqp依赖
+2. 配置RabbitMQ服务端信息
+3. 利用RabbitTemplate发送消息
+4. 利用@RabbitListener注解声明要监听的队列，监听消息
+
+#### WorkQueue消费者消息推送限制
+
+&emsp;默认情况下，RabbitMQ的会将消息依次轮训投递给绑定在队列上的每一个消费者。但这并没有考虑到消费者是否已经处理完消息，可能出现消息堆积。
+
+&emsp;因此我们需要修改application.yml，设置preFetch值为1，确保同一时刻最多投递给消费者1条消息：
+
+```yaml
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        prefetch: 1 #每次只能获取一条消息，处理完成才能获取下一个消息
+```
+
+Work模型的使用：
+
+- 多个消费者绑定到一个队列，可以加快消息处理速度
+- 同一条消息只会被一个消费者处理
+- 通过设置prefetch来控制消费者预取的消息数量，处理完一条再处理下一条，实现能者多劳
+
+#### 交换机
+
+&emsp;交换机的作用主要是**接收**发送者发送的消息，并将消息**路由**到与其绑定的队列。
+
+&emsp;常见的交换机的类型有以下三种：
+
+- Fanout：广播
+- Direct：定向
+- Topic：话题
+
+#### Fanout交换机
+
+&emsp;Fanout Exchange 会将接收到的消息路由到**每一个**跟其绑定的queue，所以也叫广播模式。
+
+##### 交换机的作用是什么？
+
+- 接收publisher发送的消息
+- 将消息按照规则路由到与之绑定的队列
+- FanoutExchange的会将消息路由到每个绑定的队列
+
+#### Direct交换机
+
+&emsp;Direct Exchange 会将接受到的消息根据规则路由到指定的Queue，因此称为**定向**路由。
+
+- 每一个Queue都与Exchange设置一个BindingKey
+- 发布者发送消息时，指定消息的RoutingKey
+- Exchange将消息路由到BindingKey与消息RoutingKey一致的队列
+
+##### 描述下Direct交换机与Fanout交换机的差异
+
+- Fanout交换机将消息路由给每一个与之绑定的队列
+- Direct交换机根据RoutingKey判断路由给哪个队列
+- 如果多个队列具有**相同RoutingKey**，则与Fanout功能类似
+
+#### Topic交换机
+
+&emsp;TopicExchange也是基于RoutingKey做消息路由，但是RoutingKey通常是多个单词的组合，并且以 **.** 分割。
+
+&emsp;Queue与Exchange指定BindingKey时可以使用通配符：
+
+- #：代指0个或多个单词
+- *：代指一个单词
+
+##### 描述下Topic交换机相比Direct交换机的差异
+
+- Topic的RoutingKey和BindingKey可以是多个单词，以 **.** 分割
+- Topic交换机与队列绑定时的BindingKey可以指定通配符
+- #：代指0个或多个单词
+- *：代指1个单词
+
+#### 基于Bean声明队列和交换机
+
+&emsp;SpringAMQP提供了几个类，用来声明队列、交换机及其绑定关系：
+
+- Queue：用于声明队列，可以用工厂类QueueBuilder构建
+- Exchange：用于声明交换机，可以用工厂类ExchangeBuilder构建
+- Binding：用于声明队列和交换机的绑定关系，可以用工厂类BindingBuilder构建
+
+#### 基于注解声明队列和交换机
+
+&emsp;SpringAMQP还提供了基于@RabbitListener注解来声明队列和交换机的方式：
+
+```java
+@RabbitLlistener(bindings = @QueueBinding(
+	value = @Queue(name = "direct.queue1"),
+    exchange = @Exchange(name = "xxxx.direct", type = ExchangeTypes.DIRECT),
+	key = {"red", "blue"}
+))
+public void listenDirectQueue1(String msg){
+    System.out.println("消费者1接收到Direct消息：["+msg+"]");
+}
+```
+
+#### 消息转换器
+
+&emsp;Spring的对消息对象的处理是由org.springframework.amqp.support.converter.MessageConverter来处理的。而默认实现的是SimpleMessageConverter，是基于JDK的ObjectOutputStream完成序列化。
+
+&emsp;存在下列问题：
+
+- JDK的序列化有安全风险（做反序列化的时候容易被代码注入）
+- JDK序列化的消息太大
+- JDK序列化的消息可读性差
+
+&emsp;建议采用JSON序列化代替默认的JDK序列化，要做两件事情：
+
+1. 在Publisher和consumer中都要引入jackson依赖：<br>
+
+   ```yaml
+   <dependency>
+   	<groupId>com.fasterxml.jackson.core</groupId>
+   	<artifactId>jackson-databind</artifactId>
+   </dependency>
+   ```
+
+2. 在Publisher和consumer中都要配置MessageConverter：<br>
+
+   ```java
+   @Bean
+   public MessageConverter messageConverter(){
+   	return new Jackson2JsonMessageConverter();
+   }
+   ```
+
+### 发送者可靠性
+
+#### 发送者重连
+
+&emsp;有的时候由于网络波动，可能会出现发送者连接MQ失败的情况。通过配置我们可以开启连接失败的重连机制。
+
+##### 注意-阻塞式重连：
+
+&emsp;当网络不稳定的时候，利用重试机制可以有效提高消息发送的成功率。不过SpringAMQP提供的重试机制是**阻塞式**的重试，也就是说多次重试等待的过程中，当前线程是被阻塞的，会影响业务性能。
+
+&emsp;如果对于业务性能有要求，建议**禁用**重试机制。如果一定要使用，请合理配置等待时长和重试次数，当然也可以考虑使用**异步**线程来执行发送消息的代码。
+
+#### 发送者确认
+
+&emsp;SpringAMQP提供了Publisher Confirm和Publisher Return两种确认机制。开启确认机制后，当发送者发送消息给MQ后，MQ会返回确认结果给发送者。返回的结果有以下几种情况：
+
+- 消息投递到MQ，但是路由失败。此时会通过PublisherReturn返回路由异常原因，然后返回**ACK**，告知投递成功
+- 临时消息投递到MQ，并且入队成功，返回**ACK**，告知投递成功
+- 持久消息投递到MQ，并且入队完成**持久化**，返回**ACK**，告知投递成功
+- 其他情况都会返回NACK，告知投递失败
+
+| ![发送者确认](截图/发送者确认.png) |
+| :--------------------------------: |
+
+##### SpringAMQP实现发送者确认
+
+1. 在Publisher这个微服务的application.yml中添加配置：<br>
+
+   ```yaml
+   spring:
+     rabbitmq:
+       publisher-confirm-type: correlated #开启Publisher Confirm机制，并且设置Confirm类型
+       publisher-returns: true #开启Publisher Return机制
+   ```
+
+   配置说明：
+
+   - 这里publisher-confirm-type有三种模式可选：
+   - - none：关闭confirm机制
+     - simple：同步阻塞等待MQ的回执消息
+     - correlated：MQ异步回调方式返回回执消息
+
+2. 每个RabbitTemplate只能配置一个ReturnCallback，因此需要在项目启动过程中配置：init方法添加@PostConstruct
+
+3. 发送消息，指定消息ID、消息ConfirmCallback
+
+### MQ可靠性
+
+&emsp;在默认情况下，RabbitMQ会将接收到的信息保存在内存中以降低消息收发的延迟。这样会导致两个问题：
+
+- 一旦MQ宕机，内存中的消息会丢失
+- 内存空间有限，当消费者故障或处理过慢时，会导致消息挤压，引发MQ阻塞
+
+| ![MQ可靠性](截图/MQ可靠性.png) |
+| :----------------------------: |
+
+
+
+#### 数据持久化
+
+&emsp;RabbitMQ实现数据持久化包括3个方面：
+
+- 交换机持久化
+- 队列持久化
+- 消息持久化
+
+#### LazyQueue
+
+&emsp;从RabbitMQ的3.6.0版本开始，就增加了Lazy Queue的概念，也就是**惰性队列**。
+
+&emsp;惰性队列的特征如下：
+
+- 接受到消息后直接存入磁盘，不再存储到内存
+- 消费者要消费消息时才会从磁盘中读取并加载到内存（可以提前缓存部分消息到内存，最多2048条）
+
+在3.12版本后，所有队列都是Lazy Queue模式，无法更改。
+
+#### RabbitMQ如何保证消息的可靠性？
+
+- 首先通过配置可以让交换机、队列、以及发送的消息都持久化，这样队列中的消息会持久化到磁盘，MQ重启消息依然存在。
+- RabbitMQ在3.6版本引入了LazyQueue，并且在3.12版本后会成为队列的默认模式。LazyQueue会将所有消息都持久化。
+- 开启持久化和生产者确认时，RabbitMQ只有在消息持久化完成后才会给生产者返回ACK回执。
+
+### 消费者可靠性
+
+#### 消费者确认机制
+
+&emsp;消费者确认机制（**ComsumerAcknowledge**）是为了确认消费者是否成功处理消息。当消费者处理消息结束后，应该向RabbitMQ发送一个回执，告知RabbitMQ自己消息处理状态：
+
+- **ack：**成功处理消息，RabbitMQ从队列中删除该消息
+- **nack：**消息处理失败，RabbitMQ需要再次投递消息
+- **reject：**消息处理失败并拒绝该消息，RabbitMQ从队列中删除该消息
+
+| ![消费者确认机制](截图/消费者确认机制.png) |
+| :----------------------------------------: |
+
+&emsp;SpringAMQP已经实现了消息确认功能。并允许我们通过配置文件选择ACK处理方式，有三种方式：
+
+- **none：**不处理。即消息投递给消费者后立刻ack，消息会立刻从MQ删除。非常不安全，不建议使用
+- **manual：**手动模式。需要自己在业务代码中调用api，发送ack或reject，存在业务入侵，但更灵活
+- **auto：**自动模式。SpringAMQP利用AOP对我们的消息处理逻辑做了环绕增强，当业务正常执行时则自动返回ack，当业务出现异常时，根据异常判断返回不同结果：
+- - 如果是业务异常，会自动返回nack
+  - 如果是消息处理或校验异常，自动返回reject
+
+```yaml
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        prefetch: 1
+        acknowledge-mode: none #none,关闭ack; manual,手动; auto,自动ack
+```
+
+#### 失败重试机制
+
+&emsp;SpringAMQP提供了消费者失败重试机制，在消费者出现异常时利用本地重试，而不是无限的requeue到mq。
+
+&emsp;在开启重启模式后，重启次数耗尽，如果消息依然失败，则需要有MessageRecoverer接口来处理，它包含三种不同的实现：
+
+- RejectAndDontRequeueRecoverer：重试耗尽后，直接reject，丢弃消息。默认就是这种方式
+- ImmediateRequeueMessageRecoverer：重试耗尽后，返回nack，消息重新入队
+- RepublishMessageRecoverer：重试耗尽后，将失败消息投递到指定的交换机
+
+| ![失败消息处理策略](截图/失败消息处理策略.png) |
+| :--------------------------------------------: |
+
+##### 失败消息处理策略
+
+&emsp;将失败处理策略改为RepublishMessageRecoverer：
+
+- 首先，定义接受失败消息的交换机、队列及其绑定关系
+- 然后，定义RepublishMessageRecoverer
+
+#### 业务幂等性
+
+&emsp;**幂等**是一个数学概念，用函数表达式来描述是这样的：f(x) = f(f(x))。在程序开发中，则是指同一个业务，执行一次或多次对业务状态的影响是一致的。
+
+##### 唯一消息id
+
+&emsp;方案一，是给每个消息都设置一个**唯一id**，利用id区分是否是重复消息：
+
+1. 每一条消息都生成一个唯一的id，与消息一起投递给消费者。
+2. 消费者接收到消息后处理自己的业务，业务处理成功后将消息ID保存到数据库。
+3. 如果下次又收到相同消息，去数据库查询判断是否存在，存在则为重复消息放弃处理。
+
+##### 业务判断
+
+&emsp;方案二，是结合业务逻辑，基于业务本身做判断（**类似于有穷状态机的状态流转**）。以余额支付业务为例：
+
+| ![业务判断](截图/业务判断.png) |
+| :----------------------------: |
+
+##### Q&A↓
+
+##### 如何保证支付服务与交易服务之间的订单状态一致性？
+
+- 首先，支付服务会在用户支付成功以后利用MQ消息通知交易服务，完成订单状态同步。
+- 其次，为了保证MQ消息的可靠性，我们采用了生产者确认机制、消费者确认、消费者失败重试等策略，确保消息投递和处理的可靠性。同时也开启了MQ的持久化，避免因服务宕机导致消息丢失。
+- 最后，我们还在交易服务更新订单状态是做了业务幂等判断，避免因消息重复消费导致订单状态异常。
+
+##### 如果交易服务消息处理失败，有没有什么兜底方案？**↓**
+
+### 延迟消息
+
+&emsp;**延迟消息：**发送者发送消息时指定一个时间，消费者不会立刻收到消息，而是在指定时间之后才收到消息。
+
+&emsp;**延迟任务：**设置在一定时间之后才执行的任务
+
+| ![延迟消息](截图/延迟消息.png) |
+| :----------------------------: |
+
+#### 死信交换机
+
+当一个队列中的消息满足下列情况之一时，就会成为**死信（dead letter）**：
+
+- 消费者使用basic.reject或basic.nack声明消费失败，并且消息的requeue参数设置为false
+- 消息是一个过期消息（达到了队列或消息本身设置的过期时间），超时无人消费
+- 要投递的队列消息堆积满了，最早的消息可能成为死信
+
+如果队列通过dead-letter-exchange属性指定了一个交换机，那么该队列中的死信就会投递到这个交换机中。这个交换机称为**死信交换机**（Dead Letter Exchange，简称DLX）。
+
+| ![死信交换机](截图/死信交换机.png) |
+| :--------------------------------: |
+
+#### 延迟消息插件
+
+&emsp;这个插件可以将普通交换机改造为支持延迟消息功能的交换机，当消息投递到交换机后可以暂存一定时间，到期后再投递到队列。
+
+| ![延迟消息插件](截图/延迟消息插件.png) |
+| :------------------------------------: |
+
+官方文档说明：https://blog.rabbitmq.com/posts/2015/04/scheduling-messages-with-rabbitmq
+
+插件下载地址：https://github.com/rabbitmq/rabbitmq-delayed-message-exchange
+
+## Elasticsearch
+
+### 初始ES
+
+&emsp;搜索引擎技术排名：
+
+1. Elasticsearch：开源的分布式搜索引擎
+2. Splunk：商业项目
+3. Solr：Apache的开源搜索引擎
+
+#### Lucene
+
+&emsp;Lucene是一个Java语言的搜索引擎类库，是Apache公司的顶级项目，有DougCutting与1999年研发。官网地址：https://lucene.apache.org/ 。
+
+&emsp;Lucene的优势：
+
+- 易扩展
+- 高性能（基于倒排索引）
+
+&emsp;2004年Shay Banon基于Lucene开发了Compass，2010年Shay Banon重写了Compass，取名为Elasticsearch，官网地址：https://www.elastic.co/cn/ ，目前最新的版本是：8.x.x。
+
+&emsp;Elasticsearch具备下列优势：
+
+- 支持分布式，可水平扩展
+- 提供Restful接口，可被任何语言调用（发送http请求即可）
+
+&emsp;Elasticsearch结合kibana、Logstash、Beats，是一整套技术栈，被叫做ELK。被广泛应用在日志数据分析、实时监控等领域。
+
+| ![ELK](截图/ELK.png) |
+| :------------------: |
 
